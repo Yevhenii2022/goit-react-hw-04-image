@@ -13,7 +13,7 @@ export const Modal = ({ url, onClose }) => {
       onClose();
     }
   };
-  console.log('first');
+
   useEffect(() => {
     const handleEscKeydown = ({ code }) => {
       if (code === 'Escape') {

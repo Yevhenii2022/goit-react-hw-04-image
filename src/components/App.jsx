@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import { Searchbar, ImageGallery, Button, Loader, Modal } from './index';
 import { searchImages } from 'services/pixabay-api';
@@ -9,29 +9,23 @@ const STATUS = {
   REJECTED: 'REJECTED',
   IDLE: 'IDLE',
 };
-export class App extends Component {
-  state = {
-    status: STATUS.IDLE,
-    query: '',
-    images: [],
-    activeImage: null,
-    page: 1,
-    totalPages: 1,
-  };
 
-  componentDidUpdate(_, prevState) {
-    const { query: prevQuery, page: prevPage } = prevState;
-    const { query, page } = this.state;
+export const App = () => {
+  const [status, setStatus] = useState(STATUS.IDLE);
+  const [query, setQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [activeImage, setActiveImage] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-    if (page !== prevPage || query !== prevQuery) {
-      this.getImages();
-    }
-  }
+  useEffect(() => {
+    if (!query) return;
+    getImages();
+    // eslint-disable-next-line
+  }, [query, page]);
 
-  async getImages() {
-    const { query, page, images } = this.state;
-
-    this.setStatus(STATUS.PENDING);
+  const getImages = async () => {
+    setStatus(STATUS.PENDING);
 
     try {
       const { hits, totalHits } = await searchImages(query, page);
@@ -41,76 +35,59 @@ export class App extends Component {
         return;
       }
 
-      this.setState({
-        images: [...images, ...hits],
-      });
+      setImages([...images, ...hits]);
 
       if (page === 1) {
         toast.info(`Hooray! We found ${totalHits} image(s).`);
-        this.calculateTotalPages(totalHits);
+        calculateTotalPages(totalHits);
       }
     } catch (error) {
       toast.error(error.message);
     } finally {
-      this.setStatus(STATUS.FULFILLED);
+      setStatus(STATUS.FULFILLED);
     }
-  }
-
-  calculateTotalPages(total) {
-    this.setState({ totalPages: Math.ceil(total / 12) });
-  }
-
-  handleSearchQuery = query => {
-    this.setState({
-      query,
-      page: 1,
-      images: [],
-      totalPages: 1,
-      status: STATUS.IDLE,
-    });
   };
 
-  setActiveImageUrl = url => this.setState({ activeImage: url });
+  const calculateTotalPages = total => setTotalPages(Math.ceil(total / 12));
 
-  setNextPage = () => this.setState(({ page }) => ({ page: page + 1 }));
+  const handleSearchQuery = query => {
+    setStatus(STATUS.IDLE);
+    setQuery(query);
+    setPage(1);
+    setImages([]);
+    setTotalPages(1);
+  };
 
-  setStatus = status => this.setState({ status });
+  const setActiveImageUrl = url => setActiveImage(url);
 
-  render() {
-    const { status, images, activeImage, page, totalPages } = this.state;
+  const setNextPage = () => setPage(page => page + 1);
 
-    const isVisibleButton = page < totalPages && status === STATUS.FULFILLED;
+  const isVisibleButton = page < totalPages && status === STATUS.FULFILLED;
 
-    return (
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr',
-          gridGap: '16px',
-          paddingBottom: '24px',
-        }}
-      >
-        <Searchbar onSearch={this.handleSearchQuery} />
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr',
+        gridGap: '16px',
+        paddingBottom: '24px',
+      }}
+    >
+      <Searchbar onSearch={handleSearchQuery} />
 
-        {images.length > 0 && (
-          <ImageGallery images={images} onClick={this.setActiveImageUrl} />
-        )}
+      {images.length > 0 && (
+        <ImageGallery images={images} onClick={setActiveImageUrl} />
+      )}
 
-        {activeImage && (
-          <Modal
-            url={activeImage}
-            onClose={() => this.setActiveImageUrl(null)}
-          />
-        )}
+      {activeImage && (
+        <Modal url={activeImage} onClose={() => setActiveImageUrl(null)} />
+      )}
 
-        {isVisibleButton && (
-          <Button onClick={this.setNextPage}>Load More</Button>
-        )}
+      {isVisibleButton && <Button onClick={setNextPage}>Load More</Button>}
 
-        {status === STATUS.PENDING && <Loader />}
+      {status === STATUS.PENDING && <Loader />}
 
-        <ToastContainer theme="colored" autoClose={3000} />
-      </div>
-    );
-  }
-}
+      <ToastContainer theme="colored" autoClose={3000} />
+    </div>
+  );
+};
