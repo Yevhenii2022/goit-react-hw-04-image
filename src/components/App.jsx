@@ -32,7 +32,7 @@ export const App = () => {
           return;
         }
 
-        setImages(prevImg => [...prevImg, ...images, ...hits]);
+        setImages(prevImg => [...prevImg, ...hits]);
 
         if (page === 1) {
           toast.info(`Hooray! We found ${totalHits} image(s).`);
@@ -46,7 +46,7 @@ export const App = () => {
     };
 
     getImages();
-  }, [images, page, query]);
+  }, [page, query]);
 
   const calculateTotalPages = total => setTotalPages(Math.ceil(total / 12));
 
