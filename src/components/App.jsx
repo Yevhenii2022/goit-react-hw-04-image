@@ -20,33 +20,33 @@ export const App = () => {
 
   useEffect(() => {
     if (!query) return;
+
+    const getImages = async () => {
+      setStatus(STATUS.PENDING);
+
+      try {
+        const { hits, totalHits } = await searchImages(query, page);
+
+        if (!hits.length) {
+          toast.info('Oooh oh, there are no results that match your query.');
+          return;
+        }
+
+        setImages(prevImg => [...prevImg, ...images, ...hits]);
+
+        if (page === 1) {
+          toast.info(`Hooray! We found ${totalHits} image(s).`);
+          calculateTotalPages(totalHits);
+        }
+      } catch (error) {
+        toast.error(error.message);
+      } finally {
+        setStatus(STATUS.FULFILLED);
+      }
+    };
+
     getImages();
-    // eslint-disable-next-line
-  }, [query, page]);
-
-  const getImages = async () => {
-    setStatus(STATUS.PENDING);
-
-    try {
-      const { hits, totalHits } = await searchImages(query, page);
-
-      if (!hits.length) {
-        toast.info('Oooh oh, there are no results that match your query.');
-        return;
-      }
-
-      setImages([...images, ...hits]);
-
-      if (page === 1) {
-        toast.info(`Hooray! We found ${totalHits} image(s).`);
-        calculateTotalPages(totalHits);
-      }
-    } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setStatus(STATUS.FULFILLED);
-    }
-  };
+  }, [images, page, query]);
 
   const calculateTotalPages = total => setTotalPages(Math.ceil(total / 12));
 
